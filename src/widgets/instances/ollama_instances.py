@@ -266,7 +266,9 @@ class BaseInstance:
             return
         model = self.get_title_model()
         params = {
-            "temperature": 0.2,
+            "options": {
+                "temperature": 0.2
+            },
             "model": model or fallback_model,
             "max_tokens": MAX_TOKENS_TITLE_GENERATION,
             "stream": False,
@@ -296,6 +298,8 @@ class BaseInstance:
             },
             'think': False
         }
+        if self.properties.get("override_parameters"):
+            params["options"]["num_ctx"] = self.properties.get('num_ctx', 16384)
         try:
             response = requests.post(
                 '{}/api/chat'.format(self.properties.get('url')),
@@ -493,7 +497,7 @@ class OllamaManaged(BaseInstance):
     default_properties = {
         'name': _('Instance'),
         'url': 'http://0.0.0.0:11434',
-        'override_parameters': False,
+        'override_parameters': True,
         'temperature': 0.7,
         'seed': 0,
         'num_ctx': 16384,
@@ -555,8 +559,7 @@ class OllamaManaged(BaseInstance):
             logger.info("Stopped Alpaca's Ollama instance")
 
     def start(self):
-        self.stop()
-        if shutil.which('ollama'):
+        if shutil.which('ollama') and not self.process:
             try:
                 params = self.properties.get('overrides', {}).copy()
                 params["OLLAMA_HOST"] = self.properties.get('url')
@@ -605,7 +608,7 @@ class Ollama(BaseInstance):
         'name': _('Instance'),
         'url': 'http://0.0.0.0:11434',
         'api': '',
-        'override_parameters': False,
+        'override_parameters': True,
         'temperature': 0.7,
         'seed': 0,
         'num_ctx': 16384,
